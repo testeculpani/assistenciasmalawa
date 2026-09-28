@@ -3,108 +3,178 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Leitura NFC</title>
+  <meta name="theme-color" content="#111111">
+  <title>Leitor NFC</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       background: #111;
-      color: white;
+      color: #fff;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       padding: 24px;
     }
 
-    .box {
+    .card {
       width: 100%;
-      max-width: 500px;
+      max-width: 480px;
       text-align: center;
     }
 
-    .titulo {
-      font-size: 18px;
-      opacity: .65;
-      margin-bottom: 18px;
+    h1 {
+      margin: 0 0 12px;
+      font-size: 28px;
+    }
+
+    .sub {
+      color: #aaa;
+      font-size: 15px;
+      margin-bottom: 28px;
     }
 
     #numero {
-      font-size: clamp(56px, 18vw, 110px);
+      min-height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(48px, 16vw, 96px);
       font-weight: 800;
-      line-height: 1;
       word-break: break-word;
-      letter-spacing: -2px;
+      margin-bottom: 26px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      padding: 18px;
+      font-size: 20px;
+      font-weight: 700;
+      background: #fff;
+      color: #111;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .5;
     }
 
     #status {
-      margin-top: 24px;
-      font-size: 15px;
-      opacity: .5;
+      margin-top: 18px;
+      min-height: 24px;
+      color: #aaa;
+      font-size: 14px;
+      line-height: 1.4;
     }
   </style>
 </head>
-
 <body>
-  <div class="box">
-    <div class="titulo">NÚMERO LIDO</div>
+
+  <div class="card">
+    <h1>Leitor NFC</h1>
+    <div class="sub">Toque no botão e aproxime a tag</div>
+
     <div id="numero">---</div>
-    <div id="status"></div>
+
+    <button id="lerBtn">Ler NFC</button>
+
+    <div id="status">Pronto para leitura.</div>
   </div>
 
   <script>
-    function pegarNumero() {
-      const url = new URL(window.location.href);
-
-      // Ex.: index.html?op=12345
-      let numero =
-        url.searchParams.get("op") ||
-        url.searchParams.get("numero") ||
-        url.searchParams.get("n") ||
-        "";
-
-      // Ex.: index.html#12345
-      if (!numero && window.location.hash) {
-        numero = decodeURIComponent(window.location.hash.substring(1));
-      }
-
-      // Ex.: /12345
-      if (!numero) {
-        const partes = window.location.pathname
-          .split("/")
-          .filter(Boolean);
-
-        const ultima = partes[partes.length - 1] || "";
-
-        if (/^\d+$/.test(ultima)) {
-          numero = ultima;
-        }
-      }
-
-      return numero.trim();
-    }
-
-    const numero = pegarNumero();
     const numeroEl = document.getElementById("numero");
     const statusEl = document.getElementById("status");
+    const lerBtn = document.getElementById("lerBtn");
 
-    if (numero) {
-      numeroEl.textContent = numero;
-      document.title = numero;
+    function decodeRecord(record) {
+      try {
+        if (!record.data) return "";
 
-      if ("vibrate" in navigator) {
-        navigator.vibrate(100);
+        const decoder = new TextDecoder(record.encoding || "utf-8");
+        return decoder.decode(record.data).trim();
+      } catch (e) {
+        return "";
       }
-    } else {
-      numeroEl.textContent = "---";
-      statusEl.textContent = "Nenhum número recebido pela tag NFC";
     }
+
+    async function iniciarLeitura() {
+      if (!("NDEFReader" in window)) {
+        statusEl.innerHTML =
+          "Web NFC não está disponível neste navegador.<br>Use o Chrome no Android e abra a página por HTTPS.";
+        return;
+      }
+
+      try {
+        const ndef = new NDEFReader();
+
+        statusEl.textContent = "Aproxime a tag NFC...";
+        numeroEl.textContent = "...";
+        lerBtn.disabled = true;
+
+        await ndef.scan();
+
+        ndef.addEventListener("readingerror", () => {
+          statusEl.textContent = "Não consegui ler esta tag. Tente aproximar novamente.";
+          lerBtn.disabled = false;
+        });
+
+        ndef.addEventListener("reading", event => {
+          let valor = "";
+
+          for (const record of event.message.records) {
+
+            if (record.recordType === "text") {
+              valor = decodeRecord(record);
+              if (valor) break;
+            }
+
+            if (record.recordType === "url" || record.recordType === "absolute-url") {
+              valor = decodeRecord(record);
+              if (valor) break;
+            }
+
+            if (record.recordType === "mime" || record.recordType === "unknown") {
+              valor = decodeRecord(record);
+              if (valor) break;
+            }
+          }
+
+          if (!valor) {
+            valor = event.serialNumber || "TAG LIDA";
+          }
+
+          numeroEl.textContent = valor;
+          statusEl.textContent = "Tag lida com sucesso.";
+          lerBtn.disabled = false;
+
+          if ("vibrate" in navigator) {
+            navigator.vibrate(120);
+          }
+        });
+
+      } catch (erro) {
+        console.error(erro);
+
+        if (erro.name === "NotAllowedError") {
+          statusEl.textContent = "Permissão de NFC negada.";
+        } else if (erro.name === "NotSupportedError") {
+          statusEl.textContent = "Este aparelho ou navegador não suporta Web NFC.";
+        } else {
+          statusEl.textContent = "Erro ao iniciar NFC: " + erro.message;
+        }
+
+        numeroEl.textContent = "---";
+        lerBtn.disabled = false;
+      }
+    }
+
+    lerBtn.addEventListener("click", iniciarLeitura);
   </script>
 </body>
 </html>
