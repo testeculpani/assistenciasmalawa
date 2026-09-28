@@ -2,369 +2,206 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Abrir B.O. de Assistência</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>Leitor NFC</title>
   <style>
-    :root {
-      --bg: #f3f6fb;
-      --card: #ffffff;
-      --line: #dbe4f0;
-      --text: #152033;
-      --muted: #66758f;
-      --primary: #2563eb;
-      --primary-2: #60a5fa;
-      --soft: #eef4ff;
-      --ok-bg: #ecfdf5;
-      --ok-text: #166534;
-      --error-bg: #fef2f2;
-      --error-text: #991b1b;
-      --radius: 18px;
-      --shadow: 0 10px 24px rgba(21, 32, 51, 0.08);
-    }
-
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 100%);
-      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #f3f4f6;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #111827;
     }
-
-    .wrap {
-      width: min(760px, calc(100% - 18px));
-      margin: 18px auto 28px;
-    }
-
-    .hero, .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      box-shadow: var(--shadow);
-    }
-
-    .hero {
-      padding: 18px;
-      margin-bottom: 16px;
-      background: linear-gradient(135deg, #eff6ff, #ffffff);
-    }
-
-    .hero h1 {
-      margin: 0 0 8px;
-      font-size: clamp(24px, 4vw, 32px);
-    }
-
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
     .card {
-      padding: 16px;
-    }
-
-    .grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .cols-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    label {
-      display: grid;
-      gap: 6px;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    input, textarea, select {
       width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #fff;
-      color: var(--text);
+      max-width: 430px;
+      background: white;
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 12px 35px rgba(0,0,0,.10);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      text-align: center;
+    }
+    .sub {
+      margin: 0 0 22px;
+      text-align: center;
+      color: #6b7280;
       font-size: 15px;
-      outline: none;
     }
-
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
-    }
-
-    textarea {
-      min-height: 110px;
-      resize: vertical;
-    }
-
-    .preview {
-      display: none;
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      object-fit: cover;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #f8fafc;
-    }
-
-    .actions {
-      display: grid;
-      gap: 10px;
-      margin-top: 6px;
-    }
-
     button {
-      border: none;
-      border-radius: 14px;
-      padding: 13px 14px;
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      padding: 17px 18px;
+      font-size: 18px;
       font-weight: 700;
-      font-size: 15px;
       cursor: pointer;
     }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    #scanBtn {
+      background: #111827;
       color: white;
     }
-
-    .btn-soft {
-      background: #f3f4f6;
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
-
-    .msg {
+    #copyBtn {
+      margin-top: 12px;
+      background: #e5e7eb;
+      color: #111827;
       display: none;
-      padding: 11px 12px;
-      border-radius: 12px;
+    }
+    .status {
+      margin-top: 18px;
+      padding: 14px;
+      background: #f9fafb;
+      border-radius: 14px;
+      color: #4b5563;
+      text-align: center;
+      min-height: 48px;
+    }
+    .result {
+      display: none;
+      margin-top: 18px;
+      padding: 20px 14px;
+      border: 2px solid #111827;
+      border-radius: 16px;
+      text-align: center;
+      word-break: break-word;
+    }
+    .label {
       font-size: 13px;
-      font-weight: 700;
+      color: #6b7280;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
     }
-
-    .ok { background: var(--ok-bg); color: var(--ok-text); border: 1px solid #bbf7d0; }
-    .error { background: var(--error-bg); color: var(--error-text); border: 1px solid #fecaca; }
-
-    .helper {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
+    #value {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.15;
     }
-
-    @media (max-width: 640px) {
-      .cols-2 { grid-template-columns: 1fr; }
-      .wrap { width: min(100% - 12px, 760px); }
-    }
+    .error { color: #b91c1c; }
+    .ok { color: #166534; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="hero">
-      <h1>Abrir B.O. de assistência</h1>
-      <p>Preencha as informações do produto e do problema. O cadastro será enviado para análise do administrativo.</p>
-    </section>
+  <main class="card">
+    <h1>📲 Leitor NFC</h1>
+    <p class="sub">Toque no botão e aproxime a tag NFC do celular.</p>
 
-    <section class="card">
-      <form id="boForm" class="grid">
-        <div class="cols-2">
-          <label>
-            Nome do cliente / empresa
-            <input type="text" id="cliente" required placeholder="Nome do cliente ou empresa" />
-          </label>
-          <label>
-            Nome do representante
-            <input type="text" id="representante" placeholder="Quem está abrindo o chamado" />
-          </label>
-        </div>
+    <button id="scanBtn">Ler NFC</button>
 
-        <div class="cols-2">
-          <label>
-            Telefone
-            <input type="text" id="telefone" placeholder="(00) 00000-0000" />
-          </label>
-          <label>
-            E-mail
-            <input type="email" id="email" placeholder="email@empresa.com" />
-          </label>
-        </div>
+    <div id="status" class="status">Pronto para leitura.</div>
 
-        <div class="cols-2">
-          <label>
-            Produto / peça
-            <input type="text" id="produto" required placeholder="Ex.: gabinete, fonte, cooler, placa" />
-          </label>
-          <label>
-            Marca / modelo
-            <input type="text" id="modelo" placeholder="Marca ou modelo" />
-          </label>
-        </div>
+    <div id="result" class="result">
+      <div class="label">Conteúdo lido</div>
+      <div id="value">—</div>
+    </div>
 
-        <div class="cols-2">
-          <label>
-            Número da nota / pedido
-            <input type="text" id="pedido" placeholder="NF, pedido ou referência" />
-          </label>
-          <label>
-            Número de série
-            <input type="text" id="serial" placeholder="Serial, lote ou patrimônio" />
-          </label>
-        </div>
-
-        <label>
-          Descrição do problema
-          <textarea id="descricao" required placeholder="Explique o defeito, avaria ou situação encontrada"></textarea>
-        </label>
-
-        <label>
-          Anexar imagem
-          <input type="file" id="imagem" accept="image/*" />
-          <img id="preview" class="preview" alt="Prévia da imagem" />
-        </label>
-
-        <div class="actions">
-          <button type="submit" class="btn-primary">Enviar B.O.</button>
-          <button type="button" id="btnLimpar" class="btn-soft">Limpar</button>
-        </div>
-
-        <div id="msg" class="msg"></div>
-        <div class="helper">Neste protótipo, os dados são enviados para o mesmo navegador usando IndexedDB. Na versão final, isso pode ir para Firebase.</div>
-      </form>
-    </section>
-  </div>
+    <button id="copyBtn">Copiar conteúdo</button>
+  </main>
 
   <script>
-    const DB_NAME = 'assistenciaBO';
-    const STORE_NAME = 'chamados';
-    let db = null;
-    let imagemAtual = '';
+    const scanBtn = document.getElementById('scanBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+    const valueEl = document.getElementById('value');
 
-    const boForm = document.getElementById('boForm');
-    const imagem = document.getElementById('imagem');
-    const preview = document.getElementById('preview');
-    const btnLimpar = document.getElementById('btnLimpar');
-    const msg = document.getElementById('msg');
+    let lastValue = '';
 
-    function showMessage(text, type = 'ok') {
-      msg.textContent = text;
-      msg.className = `msg ${type}`;
-      msg.style.display = 'block';
-      clearTimeout(window.__msgTimer);
-      window.__msgTimer = setTimeout(() => msg.style.display = 'none', 2600);
+    function setStatus(text, type = '') {
+      statusEl.textContent = text;
+      statusEl.className = 'status ' + type;
     }
 
-    function openDatabase() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = (event) => {
-          const database = event.target.result;
-          if (!database.objectStoreNames.contains(STORE_NAME)) {
-            database.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          }
-        };
-        request.onsuccess = () => { db = request.result; resolve(db); };
-        request.onerror = () => reject(request.error || new Error('Erro ao abrir banco'));
-      });
-    }
-
-    function getStore(mode = 'readonly') {
-      return db.transaction(STORE_NAME, mode).objectStore(STORE_NAME);
-    }
-
-    function addRecord(record) {
-      return new Promise((resolve, reject) => {
-        const request = getStore('readwrite').add(record);
-        request.onsuccess = () => resolve(true);
-        request.onerror = () => reject(request.error || new Error('Erro ao salvar'));
-      });
-    }
-
-    function resizeImage(file, maxWidth = 1200, quality = 0.82) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const img = new Image();
-          img.onload = () => {
-            const scale = Math.min(1, maxWidth / img.width);
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/jpeg', quality));
-          };
-          img.onerror = reject;
-          img.src = reader.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    imagem.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    function decodeRecord(record) {
       try {
-        imagemAtual = await resizeImage(file);
-        preview.src = imagemAtual;
-        preview.style.display = 'block';
-      } catch {
-        imagemAtual = '';
-        preview.style.display = 'none';
-        showMessage('Erro ao processar a imagem.', 'error');
+        if (record.recordType === 'text') {
+          return new TextDecoder(record.encoding || 'utf-8').decode(record.data);
+        }
+
+        if (record.recordType === 'url' || record.recordType === 'absolute-url') {
+          return new TextDecoder().decode(record.data);
+        }
+
+        if (record.data) {
+          return new TextDecoder().decode(record.data);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    });
+      return '';
+    }
 
-    btnLimpar.addEventListener('click', () => {
-      boForm.reset();
-      imagemAtual = '';
-      preview.src = '';
-      preview.style.display = 'none';
-    });
-
-    boForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const record = {
-        id: Date.now(),
-        origem: 'cliente',
-        cliente: document.getElementById('cliente').value.trim(),
-        representante: document.getElementById('representante').value.trim(),
-        telefone: document.getElementById('telefone').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        produto: document.getElementById('produto').value.trim(),
-        modelo: document.getElementById('modelo').value.trim(),
-        pedido: document.getElementById('pedido').value.trim(),
-        serial: document.getElementById('serial').value.trim(),
-        descricao: document.getElementById('descricao').value.trim(),
-        imagem: imagemAtual || '',
-        status: 'Novo',
-        dataAbertura: new Date().toLocaleString('pt-BR')
-      };
-
-      if (!record.cliente || !record.produto || !record.descricao) {
-        showMessage('Preencha cliente, produto e descrição.', 'error');
+    async function startScan() {
+      if (!('NDEFReader' in window)) {
+        setStatus('Este navegador não suporta leitura NFC. Use Chrome no Android.', 'error');
         return;
       }
 
       try {
-        await addRecord(record);
-        boForm.reset();
-        imagemAtual = '';
-        preview.src = '';
-        preview.style.display = 'none';
-        showMessage('B.O. enviado com sucesso.', 'ok');
+        scanBtn.disabled = true;
+        scanBtn.textContent = 'Aproxime a tag...';
+        setStatus('Leitura ativada. Aproxime a tag NFC do celular.');
+
+        const ndef = new NDEFReader();
+        await ndef.scan();
+
+        ndef.addEventListener('readingerror', () => {
+          setStatus('Não consegui ler essa tag. Tente novamente.', 'error');
+          scanBtn.disabled = false;
+          scanBtn.textContent = 'Ler NFC novamente';
+        });
+
+        ndef.addEventListener('reading', ({ message, serialNumber }) => {
+          let values = [];
+
+          for (const record of message.records) {
+            const decoded = decodeRecord(record).trim();
+            if (decoded) values.push(decoded);
+          }
+
+          // Se a tag não tiver registro NDEF, tenta mostrar o serial.
+          const finalValue = values.length ? values.join(' | ') : (serialNumber || 'Tag lida, sem conteúdo NDEF');
+
+          lastValue = finalValue;
+          valueEl.textContent = finalValue;
+          resultEl.style.display = 'block';
+          copyBtn.style.display = 'block';
+
+          setStatus('NFC lido com sucesso.', 'ok');
+          scanBtn.disabled = false;
+          scanBtn.textContent = 'Ler outra tag';
+
+          if (navigator.vibrate) navigator.vibrate(120);
+        });
+
       } catch (error) {
         console.error(error);
-        showMessage('Não foi possível enviar neste ambiente.', 'error');
+        setStatus('Erro ao ativar NFC: ' + (error.message || error), 'error');
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'Tentar novamente';
       }
-    });
+    }
 
-    openDatabase().catch((error) => {
-      console.error(error);
-      showMessage('Este ambiente de teste pode bloquear o armazenamento.', 'error');
+    scanBtn.addEventListener('click', startScan);
+
+    copyBtn.addEventListener('click', async () => {
+      if (!lastValue) return;
+      try {
+        await navigator.clipboard.writeText(lastValue);
+        copyBtn.textContent = 'Copiado ✓';
+        setTimeout(() => copyBtn.textContent = 'Copiar conteúdo', 1200);
+      } catch {
+        setStatus('Não foi possível copiar automaticamente.', 'error');
+      }
     });
   </script>
 </body>
