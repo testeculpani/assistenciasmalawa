@@ -1,208 +1,110 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
-  <title>Leitor NFC</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Leitura NFC</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: #111;
+      color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      background: #f3f4f6;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #111827;
-    }
-    .card {
-      width: 100%;
-      max-width: 430px;
-      background: white;
-      border-radius: 22px;
       padding: 24px;
-      box-shadow: 0 12px 35px rgba(0,0,0,.10);
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
-      text-align: center;
-    }
-    .sub {
-      margin: 0 0 22px;
-      text-align: center;
-      color: #6b7280;
-      font-size: 15px;
-    }
-    button {
+
+    .box {
       width: 100%;
-      border: 0;
-      border-radius: 16px;
-      padding: 17px 18px;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    .titulo {
       font-size: 18px;
-      font-weight: 700;
-      cursor: pointer;
+      opacity: .65;
+      margin-bottom: 18px;
     }
-    #scanBtn {
-      background: #111827;
-      color: white;
-    }
-    #copyBtn {
-      margin-top: 12px;
-      background: #e5e7eb;
-      color: #111827;
-      display: none;
-    }
-    .status {
-      margin-top: 18px;
-      padding: 14px;
-      background: #f9fafb;
-      border-radius: 14px;
-      color: #4b5563;
-      text-align: center;
-      min-height: 48px;
-    }
-    .result {
-      display: none;
-      margin-top: 18px;
-      padding: 20px 14px;
-      border: 2px solid #111827;
-      border-radius: 16px;
-      text-align: center;
-      word-break: break-word;
-    }
-    .label {
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
-    #value {
-      font-size: 32px;
+
+    #numero {
+      font-size: clamp(56px, 18vw, 110px);
       font-weight: 800;
-      line-height: 1.15;
+      line-height: 1;
+      word-break: break-word;
+      letter-spacing: -2px;
     }
-    .error { color: #b91c1c; }
-    .ok { color: #166534; }
+
+    #status {
+      margin-top: 24px;
+      font-size: 15px;
+      opacity: .5;
+    }
   </style>
 </head>
+
 <body>
-  <main class="card">
-    <h1>📲 Leitor NFC</h1>
-    <p class="sub">Toque no botão e aproxime a tag NFC do celular.</p>
-
-    <button id="scanBtn">Ler NFC</button>
-
-    <div id="status" class="status">Pronto para leitura.</div>
-
-    <div id="result" class="result">
-      <div class="label">Conteúdo lido</div>
-      <div id="value">—</div>
-    </div>
-
-    <button id="copyBtn">Copiar conteúdo</button>
-  </main>
+  <div class="box">
+    <div class="titulo">NÚMERO LIDO</div>
+    <div id="numero">---</div>
+    <div id="status"></div>
+  </div>
 
   <script>
-    const scanBtn = document.getElementById('scanBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const statusEl = document.getElementById('status');
-    const resultEl = document.getElementById('result');
-    const valueEl = document.getElementById('value');
+    function pegarNumero() {
+      const url = new URL(window.location.href);
 
-    let lastValue = '';
+      // Ex.: index.html?op=12345
+      let numero =
+        url.searchParams.get("op") ||
+        url.searchParams.get("numero") ||
+        url.searchParams.get("n") ||
+        "";
 
-    function setStatus(text, type = '') {
-      statusEl.textContent = text;
-      statusEl.className = 'status ' + type;
+      // Ex.: index.html#12345
+      if (!numero && window.location.hash) {
+        numero = decodeURIComponent(window.location.hash.substring(1));
+      }
+
+      // Ex.: /12345
+      if (!numero) {
+        const partes = window.location.pathname
+          .split("/")
+          .filter(Boolean);
+
+        const ultima = partes[partes.length - 1] || "";
+
+        if (/^\d+$/.test(ultima)) {
+          numero = ultima;
+        }
+      }
+
+      return numero.trim();
     }
 
-    function decodeRecord(record) {
-      try {
-        if (record.recordType === 'text') {
-          return new TextDecoder(record.encoding || 'utf-8').decode(record.data);
-        }
+    const numero = pegarNumero();
+    const numeroEl = document.getElementById("numero");
+    const statusEl = document.getElementById("status");
 
-        if (record.recordType === 'url' || record.recordType === 'absolute-url') {
-          return new TextDecoder().decode(record.data);
-        }
+    if (numero) {
+      numeroEl.textContent = numero;
+      document.title = numero;
 
-        if (record.data) {
-          return new TextDecoder().decode(record.data);
-        }
-      } catch (e) {
-        console.error(e);
+      if ("vibrate" in navigator) {
+        navigator.vibrate(100);
       }
-      return '';
+    } else {
+      numeroEl.textContent = "---";
+      statusEl.textContent = "Nenhum número recebido pela tag NFC";
     }
-
-    async function startScan() {
-      if (!('NDEFReader' in window)) {
-        setStatus('Este navegador não suporta leitura NFC. Use Chrome no Android.', 'error');
-        return;
-      }
-
-      try {
-        scanBtn.disabled = true;
-        scanBtn.textContent = 'Aproxime a tag...';
-        setStatus('Leitura ativada. Aproxime a tag NFC do celular.');
-
-        const ndef = new NDEFReader();
-        await ndef.scan();
-
-        ndef.addEventListener('readingerror', () => {
-          setStatus('Não consegui ler essa tag. Tente novamente.', 'error');
-          scanBtn.disabled = false;
-          scanBtn.textContent = 'Ler NFC novamente';
-        });
-
-        ndef.addEventListener('reading', ({ message, serialNumber }) => {
-          let values = [];
-
-          for (const record of message.records) {
-            const decoded = decodeRecord(record).trim();
-            if (decoded) values.push(decoded);
-          }
-
-          // Se a tag não tiver registro NDEF, tenta mostrar o serial.
-          const finalValue = values.length ? values.join(' | ') : (serialNumber || 'Tag lida, sem conteúdo NDEF');
-
-          lastValue = finalValue;
-          valueEl.textContent = finalValue;
-          resultEl.style.display = 'block';
-          copyBtn.style.display = 'block';
-
-          setStatus('NFC lido com sucesso.', 'ok');
-          scanBtn.disabled = false;
-          scanBtn.textContent = 'Ler outra tag';
-
-          if (navigator.vibrate) navigator.vibrate(120);
-        });
-
-      } catch (error) {
-        console.error(error);
-        setStatus('Erro ao ativar NFC: ' + (error.message || error), 'error');
-        scanBtn.disabled = false;
-        scanBtn.textContent = 'Tentar novamente';
-      }
-    }
-
-    scanBtn.addEventListener('click', startScan);
-
-    copyBtn.addEventListener('click', async () => {
-      if (!lastValue) return;
-      try {
-        await navigator.clipboard.writeText(lastValue);
-        copyBtn.textContent = 'Copiado ✓';
-        setTimeout(() => copyBtn.textContent = 'Copiar conteúdo', 1200);
-      } catch {
-        setStatus('Não foi possível copiar automaticamente.', 'error');
-      }
-    });
   </script>
 </body>
 </html>
